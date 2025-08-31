@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getUsuarios, addUsuario } from "./api";
 
+
 function App() {
   const [usuarios, setUsuarios] = useState([]);
   const [nome, setNome] = useState("");
@@ -26,6 +27,7 @@ function App() {
   return (
     <div style={{ padding: "20px" }}>
       <h1>Assistente de Investimentos</h1>
+      <p> Cadastro de Usuário: </p>
 
       <form onSubmit={handleSubmit}>
         <input
