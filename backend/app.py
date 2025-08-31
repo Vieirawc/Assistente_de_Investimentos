@@ -9,6 +9,8 @@ CORS(app)
 def home():
     return jsonify({"message": "API Assistente de Investimentos rodando!"})
 
+#Classe ABC
+
 # Criar usuário
 @app.route('/usuarios', methods=['POST'])
 def add_usuario():
