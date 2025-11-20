@@ -1,15 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
- <head>
- <meta charset="utf-8" />
- <meta name="viewport" content="width=device-width, initialscale=1" />
- <meta name="theme-color" content="#000000" />
- <title>Assistente de Investimento</title>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixInvest Web</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; color: #333; }
+        header { background-color: #003366; padding: 20px 50px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5em; font-weight: bold; color: #ffffff; }
+        
+        /* Navegação Atualizada */
+        nav a { margin-left: 20px; text-decoration: none; color: #cfd8dc; font-weight: 500; transition: color 0.3s; font-size: 0.95em; }
+        nav a:hover, nav a.active { color: #ffc107; }
+        
+        main { padding: 60px 50px; text-align: center; }
+        .page-title { font-size: 3em; color: #003366; font-weight: 700; margin-bottom: 10px; }
+        .subtitle { font-size: 1.2em; color: #555; margin-bottom: 40px; }
+        .main-image { display: block; margin: 0 auto; max-width: 800px; width: 100%; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+    </style>
 </head>
- <body>
- <noscript>You need to enable JavaScript to run this
-app.</noscript>
-<h1> Teste </h1>
-<div id="root"></div>
- </body>
+<body>
+
+    <header>
+        <div class="logo">FixInvest Web</div>
+        <nav>
+            <a href="index.html" class="active">Início</a>
+            <a href="clientes.html">Clientes</a>
+            <a href="cadastro.html">Cadastrar Parceiro</a>
+            <a href="busca.html">Investir</a>
+            <a href="estatisticas.html">Minha Carteira</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="page-title">Gestão Financeira Inteligente</h1>
+        <p class="subtitle">Conectando clientes às melhores oportunidades de investimento com previsibilidade e segurança.</p>
+        <img class="main-image" src="https://image.prntscr.com/image/V2CCeBhYQ9y9uXXm1hPCjA.png" alt="Gráficos financeiros">
+    </main>
+
+</body>
 </html>

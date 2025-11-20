@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro de Clientes - FixInvest</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; color: #333; }
+        header { background-color: #003366; padding: 20px 50px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5em; font-weight: bold; color: #ffffff; }
+        nav a { margin-left: 20px; text-decoration: none; color: #cfd8dc; font-weight: 500; transition: color 0.3s; }
+        nav a:hover, nav a.active { color: #ffc107; }
+        main { padding: 40px 50px; max-width: 800px; margin: 0 auto; }
+        
+        .form-container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 12px; background-color: #003366; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+        
+        /* Estilo da Lista */
+        .lista-clientes { margin-top: 30px; }
+        .cliente-item { background: #fff; padding: 15px; margin-bottom: 10px; border-left: 5px solid #003366; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .cliente-info strong { display: block; font-size: 1.1em; }
+        .cliente-info span { font-size: 0.9em; color: #666; }
+        
+        .btn-mini { padding: 5px 10px; font-size: 0.8em; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px; color: white; }
+        .btn-edit { background-color: #ffc107; color: #333; }
+        .btn-del { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">FixInvest Web</div>
+        <nav>
+            <a href="index.html">Início</a>
+            <a href="clientes.html" class="active">Clientes</a>
+            <a href="cadastro.html">Cadastrar Parceiro</a>
+            <a href="busca.html">Investir</a>
+            <a href="estatisticas.html">Minha Carteira</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <h2 id="titulo-form">Novo Cliente</h2>
+            <form id="clienteForm">
+                <input type="hidden" id="cliente-id"> <div class="form-group">
+                    <label>Nome Completo:</label>
+                    <input type="text" id="nome" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Perfil de Investidor:</label>
+                    <select id="perfil">
+                        <option value="Conservador">Conservador (Segurança)</option>
+                        <option value="Moderado">Moderado (Equilíbrio)</option>
+                        <option value="Arrojado">Arrojado (Risco/Retorno)</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-submit" id="btn-salvar">Cadastrar Cliente</button>
+                    <button type="button" class="btn-submit" id="btn-cancelar" style="background-color: #6c757d; display: none;" onclick="cancelarEdicao()">Cancelar</button>
+                </div>
+            </form>
+            <div id="msg" style="text-align: center; margin-top: 10px; color: green; font-weight: bold;"></div>
+        </div>
+
+        <div class="lista-clientes">
+            <h3>Clientes Cadastrados</h3>
+            <div id="lista">Carregando...</div>
+        </div>
+    </main>
+
+    <script>
+        const apiUrl = 'http://localhost:5000/clients';
+
+        document.getElementById('clienteForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('cliente-id').value;
+            const data = {
+                nome: document.getElementById('nome').value,
+                email: document.getElementById('email').value,
+                perfil: document.getElementById('perfil').value
+            };
+
+            if (id) {
+                // MODO EDIÇÃO (PUT)
+                fetch(`${apiUrl}/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+                .then(() => {
+                    mostrarMsg('Cliente atualizado com sucesso!');
+                    cancelarEdicao();
+                    carregarClientes();
+                });
+            } else {
+                // MODO CRIAÇÃO (POST)
+                fetch(apiUrl, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+                .then(() => {
+                    mostrarMsg('Cliente cadastrado com sucesso!');
+                    document.getElementById('clienteForm').reset();
+                    carregarClientes();
+                });
+            }
+        });
+
+        function carregarClientes() {
+            fetch(apiUrl).then(r => r.json()).then(data => {
+                const lista = document.getElementById('lista');
+                lista.innerHTML = '';
+                data.forEach(c => {
+                    // Usamos JSON.stringify no botão editar para passar o objeto inteiro
+                    // Note o replace de aspas para evitar bugs no HTML
+                    const cString = JSON.stringify(c).replace(/"/g, '&quot;');
+                    
+                    lista.innerHTML += `
+                        <div class="cliente-item">
+                            <div class="cliente-info">
+                                <strong>${c.nome}</strong>
+                                <span>${c.email} | ${c.perfil}</span>
+                            </div>
+                            <div>
+                                <button class="btn-mini btn-edit" onclick="prepararEdicao(${cString})">Editar</button>
+                                <button class="btn-mini btn-del" onclick="deletarCliente('${c.id}')">Excluir</button>
+                            </div>
+                        </div>`;
+                });
+            });
+        }
+
+        function deletarCliente(id) {
+            if(confirm('Tem certeza? Isso não apaga os investimentos dele.')) {
+                fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+                .then(() => carregarClientes());
+            }
+        }
+
+        function prepararEdicao(cliente) {
+            document.getElementById('titulo-form').innerText = 'Editar Cliente';
+            document.getElementById('cliente-id').value = cliente.id;
+            document.getElementById('nome').value = cliente.nome;
+            document.getElementById('email').value = cliente.email;
+            document.getElementById('perfil').value = cliente.perfil;
+            
+            document.getElementById('btn-salvar').innerText = 'Salvar Alterações';
+            document.getElementById('btn-cancelar').style.display = 'block';
+            
+            // Rola a página para o formulário
+            window.scrollTo(0, 0);
+        }
+
+        function cancelarEdicao() {
+            document.getElementById('titulo-form').innerText = 'Novo Cliente';
+            document.getElementById('clienteForm').reset();
+            document.getElementById('cliente-id').value = '';
+            document.getElementById('btn-salvar').innerText = 'Cadastrar Cliente';
+            document.getElementById('btn-cancelar').style.display = 'none';
+        }
+
+        function mostrarMsg(texto) {
+            const msg = document.getElementById('msg');
+            msg.innerText = texto;
+            setTimeout(() => msg.innerText = '', 3000);
+        }
+
+        carregarClientes();
+    </script>
+</body>
+</html>

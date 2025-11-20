@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel FixInvest</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; color: #333; }
+        header { background-color: #003366; padding: 20px 50px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5em; font-weight: bold; color: white; }
+        nav a { margin-left: 25px; text-decoration: none; color: #cfd8dc; font-weight: 500; }
+        nav a:hover { color: white; }
+        main { padding: 40px 50px; }
+        
+        .search-layout { display: flex; gap: 30px; }
+        .panel { flex: 1; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .panel h2 { margin-top: 0; color: #003366; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        
+        .project-list { list-style-type: none; padding: 0; }
+        .project-list li { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #f0f0f0; }
+        .project-list li:hover { background-color: #f9f9f9; }
+
+        /* Estilo das Tags de Investimento */
+        .tag-tipo { font-size: 0.75em; padding: 3px 8px; border-radius: 12px; color: white; font-weight: bold; text-transform: uppercase; margin-top: 5px; display: inline-block; }
+        .tag-Acao { background-color: #dc3545; } 
+        .tag-FII { background-color: #ffc107; color: #333; } 
+        .tag-Renda_Fixa { background-color: #28a745; } 
+        .tag-Outro { background-color: #6c757d; }
+
+        .project-info { display: flex; flex-direction: column; }
+        .project-yield { font-size: 0.9em; color: #003366; font-weight: bold; margin-top: 2px; }
+
+        /* Botões de Ação */
+        .btn-action { border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-left: 5px; color: white; font-size: 0.9em; transition: opacity 0.2s; }
+        .btn-action:hover { opacity: 0.9; }
+        
+        .btn-invest { background-color: #28a745; font-weight: bold; } /* Botão Verde de Investir */
+        .btn-details { background-color: #0056b3; }
+        .btn-edit { background-color: #e0a800; color: #333; }
+        .btn-delete { background-color: #c82333; }
+
+        .filter-input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+
+        /* Detalhes */
+        .detail-item { margin-bottom: 10px; }
+        .detail-label { font-weight: bold; color: #555; }
+        .highlight-number { font-size: 1.2em; color: #28a745; font-weight: bold; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 20px; width: 80%; max-width: 500px; border-radius: 8px; }
+        .close-button { float: right; font-size: 28px; cursor: pointer; }
+        .form-group { margin-bottom: 15px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <header>
+    <div class="logo">FixInvest Web</div>
+    <nav>
+        <a href="index.html">Início</a>
+        <a href="clientes.html">Clientes</a>
+        <a href="cadastro.html">Cadastrar Parceiro</a>
+        <a href="busca.html">Investir</a>
+        <a href="estatisticas.html">Minha Carteira</a>
+    </nav>
+</header>
+
+    <main>
+        <h1>Painel de Investimentos</h1>
+        <div class="search-layout">
+            <div class="panel">
+                <h2>Oportunidades Disponíveis</h2>
+                <input type="text" id="filtroBusca" onkeyup="filtrarLista()" placeholder="Filtrar por nome da empresa..." class="filter-input">
+                <ul id="lista-projetos" class="project-list">Loading...</ul>
+            </div>
+            
+            <div class="panel">
+                <h2>Análise do Ativo</h2>
+                <div id="detalhes-projeto">
+                    <p style="color: #777; padding: 20px;">Selecione uma empresa na lista para ver a análise completa.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="fecharModalEdicao()">×</span>
+            <h2>Editar Parceiro</h2>
+            <form id="editForm">
+                <input type="hidden" id="edit-id">
+                <div class="form-group"><label>Nome:</label><input type="text" id="edit-nome" required></div>
+                <div class="form-group"><label>Tipo:</label>
+                    <select id="edit-tipo" required>
+                        <option value="Acao">Ação</option>
+                        <option value="FII">Fundo Imobiliário</option>
+                        <option value="Renda_Fixa">Renda Fixa</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Rendimento (%):</label><input type="number" step="0.01" id="edit-rendimento" required></div>
+                <div class="form-group"><label>Valor Mínimo:</label><input type="number" step="0.01" id="edit-valor" required></div>
+                <button type="submit" class="btn-action btn-details" style="width:100%">Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:5000';
+        const listaProjetosUl = document.getElementById('lista-projetos');
+        const detalhesDiv = document.getElementById('detalhes-projeto');
+        const editModal = document.getElementById('editModal');
+
+        // --- 1. CARREGAR LISTA ---
+        function carregarProjetos() {
+            fetch(`${apiUrl}/projects`)
+                .then(response => response.json())
+                .then(data => {
+                    // Ordena pelo maior rendimento
+                    data.sort((a, b) => (b.rendimento || 0) - (a.rendimento || 0));
+
+                    listaProjetosUl.innerHTML = '';
+                    
+                    if(data.length === 0) {
+                        listaProjetosUl.innerHTML = '<p style="padding:10px; color:#666;">Nenhuma oportunidade cadastrada.</p>';
+                        return;
+                    }
+
+                    data.forEach(project => {
+                        const li = document.createElement('li');
+                        
+                        // AQUI ESTÁ O BOTÃO INVESTIR (btn-invest)
+                        li.innerHTML = `
+                            <div class="project-info">
+                                <span style="font-weight:bold;">${project.nome}</span>
+                                <span class="tag-tipo tag-${project.tipo_investimento || 'Outro'}">${project.tipo_investimento || 'Outro'}</span>
+                                <span class="project-yield">Retorno: ${project.rendimento || 0}% a.a.</span>
+                            </div>
+                            <div style="display:flex; align-items:center;">
+                                
+                                <button class="btn-action btn-invest" onclick="irParaSimulacao('${project.id}')">Investir / Simular</button>
+                                
+                                <button class="btn-action btn-details" onclick='mostrarDetalhes("${project.id}")'>Ver</button>
+                                <button class="btn-action btn-edit" onclick='abrirModalEdicao(${JSON.stringify(project)})'>Editar</button>
+                                <button class="btn-action btn-delete" onclick='deletarProjeto("${project.id}")'>X</button>
+                            </div>
+                        `;
+                        listaProjetosUl.appendChild(li);
+                    });
+                });
+        }
+
+        // --- 2. REDIRECIONAR PARA SIMULAÇÃO ---
+        function irParaSimulacao(idEmpresa) {
+            // Redireciona para a nova tela passando o ID na URL
+            window.location.href = `simulacao.html?empresa=${idEmpresa}`;
+        }
+
+        // --- 3. MOSTRAR DETALHES ---
+        function mostrarDetalhes(projectId) {
+            fetch(`${apiUrl}/projects/${projectId}`)
+                .then(response => response.json())
+                .then(project => {
+                    const P = (val) => val || 'N/A'; 
+                    
+                    detalhesDiv.innerHTML = `
+                        <h3 style="color: #003366; margin-bottom: 5px;">${P(project.nome)}</h3>
+                        <span class="tag-tipo tag-${project.tipo_investimento}">${P(project.tipo_investimento)}</span>
+                        
+                        <div style="margin-top: 20px;">
+                            <div class="detail-item">
+                                <span class="detail-label">Rendimento Médio Anual:</span><br>
+                                <span class="highlight-number">${project.rendimento || 0}%</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Investimento Mínimo:</span><br>
+                                <span>R$ ${project.valor_minimo || 0}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Nível de Risco:</span>
+                                <strong>${P(project.risco)}</strong>
+                            </div>
+                            <hr>
+                            <p><strong>Descrição:</strong> ${P(project.descricao)}</p>
+                            <p><strong>Cidade/Sede:</strong> ${P(project.cidade)}</p>
+                            <p><strong>Localização (ViaCEP):</strong> <span id="bairro-api">Buscando...</span></p>
+                            
+                            <button class="btn-action btn-invest" style="width:100%; margin:0; padding:15px;" onclick="irParaSimulacao('${project.id}')">Simular Investimento Agora</button>
+                        </div>
+                    `;
+
+                    // Integração ViaCEP
+                    if (project.cep) {
+                        fetch(`http://viacep.com.br/ws/${project.cep.replace(/\D/g, '')}/json/`)
+                            .then(res => res.json())
+                            .then(data => { 
+                                const el = document.getElementById('bairro-api');
+                                if(el) el.innerText = data.bairro || 'Não encontrado (CEP inválido)';
+                            })
+                            .catch(() => { 
+                                const el = document.getElementById('bairro-api');
+                                if(el) el.innerText = 'Erro ao consultar API'; 
+                            });
+                    } else {
+                         document.getElementById('bairro-api').innerText = 'CEP não cadastrado';
+                    }
+                });
+        }
+
+        // --- 4. FUNÇÕES CRUD BÁSICAS ---
+        function deletarProjeto(id) {
+            if(confirm('Tem certeza que deseja remover este parceiro?')) {
+                fetch(`${apiUrl}/projects/${id}`, {method:'DELETE'})
+                .then(() => {
+                    carregarProjetos();
+                    detalhesDiv.innerHTML = '<p style="color: #777; padding: 20px;">Selecione uma empresa na lista para ver a análise completa.</p>';
+                });
+            }
+        }
+
+        function abrirModalEdicao(p) {
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('edit-nome').value = p.nome;
+            document.getElementById('edit-tipo').value = p.tipo_investimento || '';
+            document.getElementById('edit-rendimento').value = p.rendimento || '';
+            document.getElementById('edit-valor').value = p.valor_minimo || '';
+            editModal.style.display = 'block';
+        }
+
+        function fecharModalEdicao() { 
+            editModal.style.display = 'none'; 
+        }
+        
+        document.getElementById('editForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const data = {
+                nome: document.getElementById('edit-nome').value,
+                tipo_investimento: document.getElementById('edit-tipo').value,
+                rendimento: parseFloat(document.getElementById('edit-rendimento').value),
+                valor_minimo: parseFloat(document.getElementById('edit-valor').value)
+            };
+            fetch(`${apiUrl}/projects/${id}`, { 
+                method: 'PUT', 
+                headers: {'Content-Type':'application/json'}, 
+                body: JSON.stringify(data)
+            })
+            .then(() => { 
+                fecharModalEdicao(); 
+                carregarProjetos(); 
+                // Atualiza detalhes se estiver aberto o mesmo
+                mostrarDetalhes(id);
+            });
+        });
+
+        function filtrarLista() {
+            const termo = document.getElementById('filtroBusca').value.toLowerCase();
+            const lista = document.getElementById('lista-projetos');
+            Array.from(lista.children).forEach(li => {
+                // Procura o nome dentro do span
+                const texto = li.innerText.toLowerCase();
+                li.style.display = texto.includes(termo) ? '' : 'none';
+            });
+        }
+
+        // Carregar ao iniciar
+        document.addEventListener('DOMContentLoaded', carregarProjetos);
+    </script>
+</body>
+</html>

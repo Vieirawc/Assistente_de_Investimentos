@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Minha Carteira - FixInvest</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ... (Estilos CSS mantidos iguais ao anterior, omiti para economizar espaço, copie do anterior se precisar, mas adicione o header padrao abaixo) ... */
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; color: #333; }
+        
+        /* HEADER PADRÃO */
+        header { background-color: #003366; padding: 20px 50px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5em; font-weight: bold; color: #ffffff; }
+        nav a { margin-left: 20px; text-decoration: none; color: #cfd8dc; font-weight: 500; transition: color 0.3s; }
+        nav a:hover, nav a.active { color: #ffc107; }
+
+        main { padding: 40px 50px; max-width: 1200px; margin: 0 auto; }
+        
+        /* ... (Outros estilos) ... */
+        .client-selector { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 30px; display: flex; align-items: center; gap: 15px; }
+        .client-selector select { flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; display: none; }
+        .stats-cards { display: flex; gap: 20px; margin-bottom: 30px; }
+        .card-kpi { flex: 1; background: linear-gradient(135deg, #003366 0%, #0056b3 100%); color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,51,102,0.2); }
+        .card-kpi.green { background: linear-gradient(135deg, #1e7e34 0%, #28a745 100%); }
+        .card-kpi .value { font-size: 1.8em; font-weight: bold; margin-top: 10px; }
+        .assets-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .assets-table th { background-color: #e9ecef; color: #555; padding: 15px; text-align: left; font-size: 0.9em; }
+        .assets-table td { padding: 15px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .tag { padding: 4px 8px; border-radius: 12px; color: white; font-size: 0.75em; font-weight: bold; }
+        .tag-Acao { background: #dc3545; }
+        .tag-FII { background: #ffc107; color: #333; }
+        .tag-Renda_Fixa { background: #28a745; }
+        .tag-Outro { background: #6c757d; }
+        .btn-icon { background: #f0f2f5; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 1.2em; padding: 5px 10px; margin-left: 5px; transition: all 0.2s; }
+        .btn-icon:hover { transform: scale(1.1); background: #e2e6ea; }
+        .btn-icon.del:hover { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .chart-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* MODAL */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 30px; width: 90%; max-width: 450px; border-radius: 10px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); position: relative; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from {transform: translateY(-50px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+        .modal h3 { margin-top: 0; color: #003366; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; }
+        .modal-form-group { margin-bottom: 20px; }
+        .modal-form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        .modal-form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 1em; }
+        .btn-modal { width: 100%; padding: 12px; border: none; border-radius: 5px; font-size: 1em; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-save { background-color: #28a745; color: white; }
+        .btn-confirm-del { background-color: #dc3545; color: white; }
+        .btn-cancel { background-color: #6c757d; color: white; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">FixInvest Web</div>
+        <nav>
+            <a href="index.html">Início</a>
+            <a href="clientes.html">Clientes</a>
+            <a href="cadastro.html">Cadastrar Parceiro</a>
+            <a href="busca.html">Investir</a>
+            <a href="estatisticas.html" class="active">Minha Carteira</a>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Dashboard de Rentabilidade</h2>
+        
+        <div class="client-selector">
+            <label><strong>Selecione o Cliente para Análise:</strong></label>
+            <select id="clienteSelect" onchange="carregarDashboard()">
+                <option value="">Carregando clientes...</option>
+            </select>
+        </div>
+
+        <div id="dashboard" class="dashboard-grid">
+            <div class="left-panel">
+                <div class="stats-cards">
+                    <div class="card-kpi">
+                        <h3>Patrimônio Total Investido</h3>
+                        <div class="value" id="kpi-total">R$ 0,00</div>
+                    </div>
+                    <div class="card-kpi green">
+                        <h3>Renda Mensal Estimada</h3>
+                        <div class="value" id="kpi-mensal">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <h3>Detalhamento dos Ativos</h3>
+                <table class="assets-table">
+                    <thead>
+                        <tr>
+                            <th>Empresa / Fundo</th>
+                            <th>Tipo</th>
+                            <th>Valor Aplicado</th>
+                            <th>Aporte Mensal</th> <th>Retorno Mensal</th>
+                            <th style="text-align: center;">Gerenciar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-ativos"></tbody>
+                </table>
+            </div>
+
+            <div class="right-panel">
+                <div class="chart-container">
+                    <h3 style="color:#555; margin-bottom:20px;">Distribuição da Carteira</h3>
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modalEditar" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="fecharModais()">&times;</span>
+            <h3>Editar Investimento</h3>
+            <p style="font-size:0.9em; color:#666; margin-bottom:20px;">Atualize os valores do plano.</p>
+            
+            <input type="hidden" id="edit-id">
+            
+            <div class="modal-form-group">
+                <label>Valor Inicial Investido (R$):</label>
+                <input type="number" id="edit-valor" step="0.01">
+            </div>
+
+            <div class="modal-form-group">
+                <label>Aporte Mensal (R$):</label>
+                <input type="number" id="edit-aporte" step="0.01">
+            </div>
+            
+            <div class="modal-form-group">
+                <label>Meta Financeira (R$):</label>
+                <input type="number" id="edit-meta" step="0.01">
+            </div>
+
+            <button class="btn-modal btn-save" onclick="salvarEdicao()">Salvar Alterações</button>
+        </div>
+    </div>
+
+    <div id="modalExcluir" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <span class="close-modal" onclick="fecharModais()">&times;</span>
+            <h3 style="color: #dc3545; border:none;">Resgatar Investimento?</h3>
+            <p>Tem certeza que deseja excluir este investimento da carteira?</p>
+            <input type="hidden" id="delete-id">
+            <button class="btn-modal btn-confirm-del" onclick="confirmarExclusao()">Sim, Resgatar/Excluir</button>
+            <button class="btn-modal btn-cancel" onclick="fecharModais()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:5000';
+        let myChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch(`${apiUrl}/clients`)
+                .then(r => r.json())
+                .then(data => {
+                    const sel = document.getElementById('clienteSelect');
+                    sel.innerHTML = '<option value="">Selecione um cliente...</option>';
+                    data.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+                });
+        });
+
+        function carregarDashboard() {
+            const clienteId = document.getElementById('clienteSelect').value;
+            if (!clienteId) { document.getElementById('dashboard').style.display = 'none'; return; }
+
+            fetch(`${apiUrl}/portfolio/client/${clienteId}`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('dashboard').style.display = 'grid';
+                    const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    
+                    document.getElementById('kpi-total').innerText = fmt(data.totais.total_investido);
+                    document.getElementById('kpi-mensal').innerText = fmt(data.totais.renda_mensal_projetada);
+
+                    const tbody = document.getElementById('lista-ativos');
+                    tbody.innerHTML = '';
+                    
+                    if(data.lista.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Nenhum investimento encontrado.</td></tr>';
+                    }
+                    
+                    data.lista.forEach(item => {
+                        const itemSafe = JSON.stringify({
+                            id: item.id,
+                            valor: item.valor_aplicado,
+                            aporte: item.aporte_mensal || 0, // Passando aporte
+                            meta: item.meta
+                        }).replace(/"/g, '&quot;');
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><strong>${item.empresa}</strong></td>
+                                <td><span class="tag tag-${item.tipo}">${item.tipo}</span></td>
+                                <td>${fmt(item.valor_aplicado)}</td>
+                                <td style="color:#0056b3;">${fmt(item.aporte_mensal)}</td> <td style="color:green; font-weight:bold;">+ ${fmt(item.renda_mensal)}</td>
+                                <td style="text-align: center;">
+                                    <button class="btn-icon" title="Editar Investimento" onclick="abrirModalEditar(${itemSafe})">✏️</button>
+                                    <button class="btn-icon del" title="Resgatar/Excluir" onclick="abrirModalExcluir('${item.id}')">🗑️</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    renderizarGrafico(data.grafico);
+                });
+        }
+
+        // --- EDIÇÃO ATUALIZADA COM APORTE ---
+        function abrirModalEditar(item) {
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('edit-valor').value = item.valor;
+            document.getElementById('edit-aporte').value = item.aporte; // Preencher
+            document.getElementById('edit-meta').value = item.meta;
+            document.getElementById('modalEditar').style.display = 'block';
+        }
+
+        function salvarEdicao() {
+            const id = document.getElementById('edit-id').value;
+            const novoValor = parseFloat(document.getElementById('edit-valor').value);
+            const novoAporte = parseFloat(document.getElementById('edit-aporte').value);
+            const novaMeta = parseFloat(document.getElementById('edit-meta').value);
+
+            if(isNaN(novoValor) || isNaN(novoMeta)) { alert("Preencha os valores corretamente!"); return; }
+
+            const dadosAtualizados = {
+                valor_inicial: novoValor,
+                aporte_mensal: novoAporte || 0, // Salvar
+                meta: novaMeta
+            };
+
+            fetch(`${apiUrl}/portfolio/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(dadosAtualizados)
+            }).then(() => {
+                fecharModais();
+                carregarDashboard(); 
+            });
+        }
+
+        // ... (Funções de Excluir e Gráfico mantidas iguais) ...
+        
+        function abrirModalExcluir(id) {
+            document.getElementById('delete-id').value = id;
+            document.getElementById('modalExcluir').style.display = 'block';
+        }
+
+        function confirmarExclusao() {
+            const id = document.getElementById('delete-id').value;
+            fetch(`${apiUrl}/portfolio/${id}`, { method: 'DELETE' })
+            .then(() => {
+                fecharModais();
+                carregarDashboard();
+            });
+        }
+
+        function fecharModais() {
+            document.getElementById('modalEditar').style.display = 'none';
+            document.getElementById('modalExcluir').style.display = 'none';
+        }
+
+        function renderizarGrafico(dados) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            const total = dados.Acao + dados.FII + dados.Renda_Fixa + dados.Outro;
+            if (total === 0) return;
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ações', 'FIIs', 'Renda Fixa', 'Outros'],
+                    datasets: [{
+                        data: [dados.Acao, dados.FII, dados.Renda_Fixa, dados.Outro],
+                        backgroundColor: ['#dc3545', '#ffc107', '#28a745', '#6c757d'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+    </script>
+</body>
+</html>

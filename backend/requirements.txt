@@ -1,3 +1,4 @@
 flask
 flask-cors
 pymongo
+Flask-CORS==3.0.10 
